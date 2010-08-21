@@ -167,6 +167,12 @@
         
         getURL: function(url, target){
             var u = Gordon.urlTargets;
+      var fscmd=url.match(/^fscommand:(.*)$/i), id=this.id;
+      if(fscmd){
+        if(id && window[id+"_DoFSCommand"])
+          window[id+"_DoFSCommand"](fscmd[1],target);
+      }
+      else
             switch(target){
                 case u.BLANK:
                     win.open(url);
