@@ -7,6 +7,9 @@ var win = window,
 
 Gordon = {
     debug: false,
+    abc: {
+        vm: {}
+    },
     qualityValues: {
         LOW: "low",
         AUTO_LOW: "autolow",

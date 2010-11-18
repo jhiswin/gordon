@@ -98,11 +98,13 @@
                         type: "shape",
                         id: id + '-' + (i + 1),
                         commands: edges2cmds(seg.records, !!seg.line),
+                        edges: seg.records,
                         fill: seg.fill,
                         line: seg.line
                     }); }
                 }else{
                     shape.commands = edges2cmds(edges.records, !!edges.line),
+                    shape.edges = edges.records,
                     shape.fill = edges.fill,
                     shape.line = edges.line
                 }
@@ -428,6 +430,7 @@
                     if(0xffd9 == word){
                         word = ((data.charCodeAt(++i) & 0xff) << 8) | (data.charCodeAt(++i) & 0xff);
                         if(word == 0xffd8){
+                            i++;
                             data = data.substr(0, i - 4) + data.substr(i);
                             i -= 4;
                         }
@@ -533,12 +536,12 @@
                             if(isGeneral){
                                 x += s.readSB(numBits);
                                 y += s.readSB(numBits);
-                                cmds.push('L' + x + ',' + y);
+                                cmds.push('L' + x + ',' + (-y));
                             }else{
                                 var isVertical = s.readBool();
                                 if(isVertical){
                                     y += s.readSB(numBits);
-                                    cmds.push('V' + y);
+                                    cmds.push('V' + (-y));
                                 }else{
                                     x += s.readSB(numBits);
                                     cmds.push('H' + x);
@@ -549,7 +552,7 @@
                                 cy = y + s.readSB(numBits);
                             x = cx + s.readSB(numBits);
                             y = cy + s.readSB(numBits);
-                            cmds.push('Q' + cx + ',' + cy + ',' + x + ',' + y);
+                            cmds.push('Q' + cx + ',' + (-cy) + ',' + x + ',' + (-y));
                         }
                     }else{
                         var flags = s.readUB(5);
@@ -558,7 +561,7 @@
                                 var numBits = s.readUB(5);
                                 x = s.readSB(numBits);
                                 y = s.readSB(numBits);
-                                cmds.push('M' + x + ',' + y);
+                                cmds.push('M' + x + ',' + (-y));
                             }
                             if(flags & c.LEFT_FILL_STYLE || flags & c.RIGHT_FILL_STYLE){ s.readUB(numFillBits); }
                         }

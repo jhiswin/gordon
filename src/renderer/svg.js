@@ -264,7 +264,7 @@
                                 advances = [],
                                 chars = [];
                                 x = string.x,
-                                y = string.y * -1;
+                                y = string.y;
                             for(var j = 0, entry = entries[0]; entry; entry = entries[++j]){
                                 var str = fromCharCode(codes[entry.index]);
                                 if(' ' != str || chars.length){
@@ -276,7 +276,7 @@
                             t._setAttributes(txtNode, {
                                 id: 't' + id + '-' + (i + 1),
                                 "font-family": font.id,
-                                "font-size": string.size * 20,
+                                "font-size": string.size,
                                 x: advances.join(' '),
                                 y: y
                             });
@@ -388,7 +388,6 @@
                                 var node = t._createElement('g');
                                 node.appendChild(frag);
                             }else{ var node = frag.firstChild; }
-                            matrix.scaleY *= -1;
                             attrs.transform = matrix2string(matrix);
                             break;
                     }
