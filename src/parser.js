@@ -66,6 +66,7 @@
                     if(0x3f == len){ len = s.readUI32(); }
                     var offset = s.offset;
                     if(code){
+//                    	console.info(Gordon.tagNames[code]);
                         if(code == f){
                             t.ondata(frm);
                             break;
@@ -87,7 +88,7 @@
                         type: "shape",
                         id: id,
                         bounds: s.readRect()
-                    }
+                    },
                     t = this,
                     fillStyles = t._readFillStyles(s, withAlpha),
                     lineStyles = t._readLineStyles(s, withAlpha),
@@ -106,7 +107,7 @@
                     shape.commands = edges2cmds(edges.records, !!edges.line),
                     shape.edges = edges.records,
                     shape.fill = edges.fill,
-                    shape.line = edges.line
+                    shape.line = edges.line;
                 }
                 t.ondata(shape);
                 t._dictionary[id] = shape;
@@ -114,7 +115,8 @@
             },
             
             _readEdges: function(s, fillStyles, lineStyles, withAlpha, morph){
-                var numFillBits = s.readUB(4),
+                var t = this,
+                	numFillBits = s.readUB(4),
                     numLineBits = s.readUB(4),
                     x1 = 0,
                     y1 = 0,
@@ -380,7 +382,7 @@
                 if(0xff == numStyles){ numStyles = s.readUI16(); }
                 while(numStyles--){
                     var width = s.readUI16(),
-                        color = withAlpha || morph ? s.readRGBA() : s.readRGB()
+                        color = withAlpha || morph ? s.readRGBA() : s.readRGB();
                     styles.push({
                         width: morph ? [width, s.readUI16()] : width,
                         color: morph ? [color, s.readRGBA()] : color
@@ -667,6 +669,7 @@
                     img = {
                         type: "image",
                         id: id,
+                        format: format,		/* Ghostoy */
                         width: s.readUI16(),
                         height: s.readUI16(),
                         withAlpha: withAlpha
@@ -717,7 +720,7 @@
                 if(flags & f.HAS_RATIO){ character.ratio = s.readUI16(); }
                 if(flags & f.HAS_NAME){ character.name = s.readString(); }
                 if(flags & f.HAS_CLIP_DEPTH){ character.clipDepth = s.readUI16(); }
-                if(flags & f.HAS_CLIP_ACTIONS){ s.seek(len - (s.offset - offset)) }
+                if(flags & f.HAS_CLIP_ACTIONS){ s.seek(len - (s.offset - offset)); }
                 frm.displayList[depth] = character;
                 return t;
             },
@@ -737,7 +740,7 @@
             },
             
             _handleDefineButton2: function(s, offset, len, frm){
-                return t._handleDefineButton(s, offset, len, frm, true);
+                return this._handleDefineButton(s, offset, len, frm, true);
             },
             
             _handleDefineBitsJpeg3: function(s, offset, len, frm){
@@ -757,6 +760,7 @@
                     timeline = [],
                     sprite = {
                         id: id,
+                        type: 'sprite',
                         timeline: timeline
                     },
                     t = this;
@@ -907,7 +911,7 @@
                     else{ cmds.push('L' + x2 + ',' + y2); }
                 }else{ cmds.push('Q' + edge.cx + ',' + edge.cy + ',' + x2 + ',' + y2); }
             };
-            if(!stroke && (x2 != firstEdge.x1 || y2 != firstEdge.y1)){ cmds.push('L' + firstEdge.x1 + ',' + firstEdge.y1) }
+            if(!stroke && (x2 != firstEdge.x1 || y2 != firstEdge.y1)){ cmds.push('L' + firstEdge.x1 + ',' + firstEdge.y1); }
             return cmds.join('');
         }
         
