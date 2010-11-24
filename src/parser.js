@@ -1,5 +1,5 @@
 (function(){
-    if(doc && window.Worker){
+    if(false && doc && window.Worker){
         var REGEXP_SCRIPT_SRC = /(^|.*\/)gordon.(min\.)?js$/,
             scripts = doc.getElementsByTagName("script"),
             src = '',
@@ -66,7 +66,6 @@
                     if(0x3f == len){ len = s.readUI32(); }
                     var offset = s.offset;
                     if(code){
-//                    	console.info(Gordon.tagNames[code]);
                         if(code == f){
                             t.ondata(frm);
                             break;
@@ -778,10 +777,16 @@
                         var offset = s.offset;
                         if(code){
                             if(code == f){
-                                timeline.push(c);
+                                timeline.push(frm);
+                                frm = {
+                            		type: "frame",
+                                    displayList: {}
+                                };
                                 break;
                             }
-                            if(c[code] && t[handl]){ t[handl](s, offset, len, frm); }
+                            if(c.indexOf(code) != -1 && t[handl]){ 
+                            	t[handl](s, offset, len, frm);
+                            }
                             else{ s.seek(len); }
                         }
                     }while(code);

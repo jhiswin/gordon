@@ -102,7 +102,7 @@
                 else{ t.goTo(1); }
             }
             setTimeout(function(){
-                if(t.isPlaying){ t.play() };
+                if(t.isPlaying){ t.play(); };
             }, timeout);
             return t;
         },

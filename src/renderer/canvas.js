@@ -47,8 +47,14 @@ Gordon.CanvasRenderer = function(width, height, frmSize, quality, scale, bgcolor
     t._stylesheet = doc.styleSheets[doc.styleSheets.length - 1];
 
     t._dictionary = {};
+    
     t._timeline = [];
     t._displayList = {};
+    t._clipDepth = 0;
+    t._preserve = false;
+    
+    t._context = [];
+    
     t._cached = {};
     
 };
@@ -223,50 +229,77 @@ Gordon.CanvasRenderer.prototype = {
             t.setBgcolor(bgcolor);
             t.bgcolor = bgcolor;
         }
+        
         t._timeline.push(frm);
         return t;
     },
 
     show: function(frmIdx) {
+    	console.info(frmIdx);
         var t = this,
             frm = t._timeline[frmIdx],
             d = t._displayList,
-            fd = frm.displayList,
+            fd = frm ? frm.displayList : {},
             ctx = t._ctx;
-        ctx.clearRect(0, 0, t.width, t.height);
-        ctx.save();
-        ctx.setTransform(t.scaleX, 0, 0, t.scaleY, t.moveX, t.moveY);
-        for(var depth in fd){
-            if (d[depth] && fd[depth] && !fd[depth].object) {
-                for(var p in fd[depth]) {
-                    d[depth][p] = fd[depth][p];
-                }
-            } else {
-                d[depth] = fd[depth];
-            }
+        if(!t._preserve) {
+	        ctx.clearRect(0, 0, t.width, t.height);
+	        ctx.save();
+	        ctx.setTransform(t.scaleX, 0, 0, t.scaleY, t.moveX, t.moveY);
         }
+
+        t._updateDisplayList(d, fd);
+        
         for(var depth in d) {
             var character = d[depth];
             if (character) {
                 t.place(character);
             }
         }
+        
+        // in case of the last clipped character is removed 
         if (t._clipDepth) {
             t._clipDepth = 0;
             ctx.restore();
         }
-        ctx.restore();
+        
+        if (!t._preserve) {
+        	ctx.restore();
+        }
         return t;
+    },
+
+    _updateDisplayList: function(d, fd) {
+    	
+        for(var depth in fd){
+        	var oldChar = d[depth],
+        		newChar = fd[depth],
+        		update = oldChar && newChar && !newChar.object;
+        	
+            if (update) { // update character
+                for(var p in newChar) {
+                    oldChar[p] = newChar[p];
+                }
+            } else {	// replace character
+            	d[depth] = oldChar = {};
+                for(var p in newChar) {
+                    oldChar[p] = newChar[p];
+                }
+            }
+        }
+        
     },
 
     place: function(character) {
         var t = this,
+        	c = t._ctx,
             def = t._dictionary[character.object];
         if (def) {
             if (def.type == 'shape') {
-                this._renderShape(this._ctx, def, character);
+                this._renderShape(c, def, character);
             } else if (def.type == 'text') {
-                this._renderText(this._ctx, def, character);
+                this._renderText(c, def, character);
+            } else if (def.type == 'sprite') {
+            	this._renderSprite(c, def, character);
             } else {
                 console.warn(def.type);
                 console.info(def);
@@ -471,6 +504,48 @@ Gordon.CanvasRenderer.prototype = {
             x += entry.advance;
         }
         t._postpare(c, string);
+    },
+	
+	_contextKeys: ['_timeline', '_displayList', '_clipDepth', '_preserve'],
+	
+	saveContext: function(newContext) {
+		var t = this,
+			context = {};
+		for(var i in t._contextKeys) {
+			var key = t._contextKeys[i];
+			context[key] = t[key];
+			t[key] = newContext[key];
+		}
+		t._context.push(context);
+	},
+	
+	restoreContext: function() {
+		var t = this,
+			context = t._context.pop();
+		for(var i in t._contextKeys) {
+			t[i] = context[t._contextKeys[i]];
+		}
+	},
+	
+	_renderSprite: function(ctx, def, sprite) {
+		if(!sprite.context) {
+			sprite.context = {
+				_timeline: def.timeline,
+				_displayList: {},
+				_clipDepth: 0,
+				_preserve: true
+			};
+			sprite.frmIdx = 0;
+		}
+		var m = sprite.matrix;
+    	this.saveContext(sprite.context);
+    	ctx.save();
+    	if (m) {
+    		ctx.transform(m.scaleX, m.skewX, m.skewY, m.scaleY, m.moveX, m.moveY);
+    	}
+    	this.show(sprite.frmIdx++);
+    	ctx.restore();
+    	this.restoreContext();
     }
 };
 
