@@ -6,6 +6,8 @@
  */
 
 (function(){
+// Feature switches
+var USE_WEB_FONT = false;
 
 Gordon.CanvasRenderer = function(width, height, frmSize, quality, scale, bgcolor) {
     var t = this,
@@ -87,43 +89,45 @@ Gordon.CanvasRenderer.prototype = {
         	/* Glyph Fonts */
             var glyphs = obj.glyphs;
 
-            if(!obj.info) {
-            	var codes = [];
-            	for(var i = 0; i < glyphs.length; i++) codes[i] = i + 65;
-            	obj.info = {
-            		codes: codes,
-            		advanceTable: null,
-            		kerningTable: null,
-            		ascent: 0,
-            		descent: 0
-            	};
-            }
-
-            var info = obj.info,
-                codes = info.codes;
-                kerningTable = info.kerningTable,
-                advanceTable = info.advanceTable;
-
-            var font_svg = '<?xml version="1.0" standalone="yes"?>'+
-'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >'+
-'<svg xmlns="http://www.w3.org/2000/svg"><defs>'+
-'<font horiz-adv-x="'+(advanceTable ? '' + advanceTable : 1024)+'" >'+
-'<font-face units-per-em="1024" ascent="'+(info.ascent || 1024)+'" descent="'+(info.descent || 1024)+'" />';
-            for(var i = 0, glyph = glyphs[0]; glyph; glyph = glyphs[++i]) {
-                var cmds = glyph.commands,
-                    code = codes[i];
-                if(cmds && code) {
-                    font_svg += '<glyph unicode="&#x'+code.toString(16)+';" d="'+cmds+'z"/>';
+            if (USE_WEB_FONT) {	// Web Font
+                if(!obj.info) {
+                	var codes = [];
+                	for(var i = 0; i < glyphs.length; i++) codes[i] = i;
+                	obj.info = {
+                		codes: codes,
+                		advanceTable: null,
+                		kerningTable: null,
+                		ascent: 0,
+                		descent: 0
+                	};
                 }
+
+                var info = obj.info,
+	                codes = info.codes;
+	                kerningTable = info.kerningTable,
+	                advanceTable = info.advanceTable;
+
+            	var font_svg = '<?xml version="1.0" standalone="yes"?>'+
+	'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >'+
+	'<svg xmlns="http://www.w3.org/2000/svg"><defs>'+
+	'<font horiz-adv-x="'+(advanceTable)+'" >'+
+	'<font-face units-per-em="1024" ascent="'+(info.ascent)+'" descent="'+(info.descent)+'" />';
+	            for(var i = 0, glyph = glyphs[0]; glyph; glyph = glyphs[++i]) {
+	                var cmds = glyph.commands,
+	                    code = codes[i];
+	                if(cmds && code) {
+	                    font_svg += '<glyph unicode="&#x'+code.toString(16)+';" d="'+cmds+'z"/>';
+	                }
+	            }
+	            if(kerningTable) {
+	                for(var i = 0, kern = kerningTable[0]; kern; kern = kerningTable[++i]) {
+	                    font_svg += '<hkern g1="'+kern.code1+'" g2="'+kern.code2+'" k="'+kern.adjustment+'"/>';
+	                }
+	            }
+	            font_svg += '</font>'+
+	'</defs></svg>';
+	            t._stylesheet.insertRule('@font-face {font-family: "f'+id+'"; src: url("data:font/svg;base64,'+btoa(font_svg)+'") format("svg")}', 0);
             }
-            if(kerningTable) {
-                for(var i = 0, kern = kerningTable[0]; kern; kern = kerningTable[++i]) {
-                    font_svg += '<hkern g1="'+kern.code1+'" g2="'+kern.code2+'" k="'+kern.adjustment+'"/>';
-                }
-            }
-            font_svg += '</font>'+
-'</defs></svg>';
-            t._stylesheet.insertRule('@font-face {font-family: "f'+id+'"; src: url("data:font/svg;base64,'+btoa(font_svg)+'") format("svg")}', 0);
             break;
         case 'image':
         	var id = objId({'id':obj.id}),
@@ -235,7 +239,6 @@ Gordon.CanvasRenderer.prototype = {
     },
 
     show: function(frmIdx) {
-    	console.info(frmIdx);
         var t = this,
             frm = t._timeline[frmIdx],
             d = t._displayList,
@@ -388,9 +391,9 @@ Gordon.CanvasRenderer.prototype = {
                 case 'radial':
                     var stops = g.stops;
                     if("linear" == type){
-                        var gradient = ctx.createLinearGradient(-819.2, 0, 819.2, 0);
+                        var gradient = ctx.createLinearGradient(-16384, 0, 16384, 0);
                     }else{
-                        var gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 819.2);
+                        var gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 16384);
                     }
                     for(var i in stops) {
                         var color = stops[i].color;
@@ -461,7 +464,7 @@ Gordon.CanvasRenderer.prototype = {
             ctx.transform(m.scaleX, m.skewY, m.skewX, m.scaleY, m.moveX, m.moveY);
         }
         ctx.strokeStyle = t._buildFill(ctx, stroke.color, cxform);
-        ctx.lineWidth = max(stroke.width, 20);
+        ctx.lineWidth = max(stroke.width, 10);
         ctx.stroke();
         ctx.restore();
     },
@@ -474,7 +477,11 @@ Gordon.CanvasRenderer.prototype = {
 
         t._prepare(c, o);
         for(var i = 0, string = strings[0]; string; string = strings[++i]) {
-            t._renderString(c, string);
+        	if(USE_WEB_FONT) {
+        		t._renderString(c, string);
+        	} else {
+        		t._renderStringStd(c, string);
+        	}
         }
         t._postpare(c, o);
     },
@@ -490,6 +497,7 @@ Gordon.CanvasRenderer.prototype = {
             x = string.x, y = string.y;
         t._prepare(c, string);
         if (!info) {
+        	console.warn('no font info found');
         	console.info(font);
         }
         for(var j = 0, entry = entries[0]; entry; entry = entries[++j]) {
@@ -504,6 +512,49 @@ Gordon.CanvasRenderer.prototype = {
             x += entry.advance;
         }
         t._postpare(c, string);
+    },
+    _renderStringStd: function(ctx, string) {
+    	var t = this,
+    		c = ctx,
+    		entries = string.entries,
+    		fill = string.fill,
+    		scale = string.size / 1024,
+    		font = t._dictionary[string.font],
+    		glyphs = font.glyphs,
+    		info = font.info,
+            x = string.x, y = string.y;
+    	
+    	for(var j = 0, entry = entries[0]; entry; entry = entries[++j]) {
+    		var index = entry.index,
+    			g = glyphs[index],
+    			paths = g.paths;
+    		c.save();
+    		c.translate(x, y);
+    		c.scale(scale, scale);
+    		c.beginPath();
+    		for(var i = 0, path = paths[0]; path; path = paths[++i]) {
+    			switch(path.type) {
+    			case 'M':
+    				c.moveTo(path.x, path.y);
+    				break;
+    			case 'L':
+    			case 'V':
+    			case 'H':
+    				c.lineTo(path.x, path.y);
+    				break;
+    			case 'Q':
+    				c.quadraticCurveTo(path.cx, path.cy, path.x, path.y);
+    				break;
+    			}
+    		}
+    		c.closePath();
+    		if(fill) {
+    			c.fillStyle = t._buildFill(c, fill, null);
+        		c.fill();
+    		}
+    		c.restore();
+    		x += entry.advance;
+    	}
     },
 	
 	_contextKeys: ['_timeline', '_displayList', '_clipDepth', '_preserve'],

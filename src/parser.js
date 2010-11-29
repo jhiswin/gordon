@@ -525,6 +525,7 @@
                     x = 0,
                     y = 0,
                     cmds = [],
+                    paths = [],	/* Ghostoy's Fix: simplify canvas renderer */
                     c = Gordon.styleChangeStates;
                 do{
                     var type = s.readUB(1),
@@ -538,14 +539,29 @@
                                 x += s.readSB(numBits);
                                 y += s.readSB(numBits);
                                 cmds.push('L' + x + ',' + (-y));
+                                paths.push({
+                                	type: 'L',
+                                	x: x,
+                                	y: y
+                                });
                             }else{
                                 var isVertical = s.readBool();
                                 if(isVertical){
                                     y += s.readSB(numBits);
                                     cmds.push('V' + (-y));
+                                    paths.push({
+                                    	type: 'V',
+                                    	x: x,
+                                    	y: y
+                                    });
                                 }else{
                                     x += s.readSB(numBits);
                                     cmds.push('H' + x);
+                                    paths.push({
+                                    	type: 'H',
+                                    	x: x,
+                                    	y: y
+                                    });
                                 }
                             }
                         }else{
@@ -554,6 +570,13 @@
                             x = cx + s.readSB(numBits);
                             y = cy + s.readSB(numBits);
                             cmds.push('Q' + cx + ',' + (-cy) + ',' + x + ',' + (-y));
+                            paths.push({
+                            	type: 'Q',
+                            	x: x,
+                            	y: y,
+                            	cx: cx,
+                            	cy: cy
+                            });
                         }
                     }else{
                         var flags = s.readUB(5);
@@ -563,13 +586,18 @@
                                 x = s.readSB(numBits);
                                 y = s.readSB(numBits);
                                 cmds.push('M' + x + ',' + (-y));
+                                paths.push({
+                                	type: 'M',
+                                	x: x,
+                                	y: y
+                                });
                             }
                             if(flags & c.LEFT_FILL_STYLE || flags & c.RIGHT_FILL_STYLE){ s.readUB(numFillBits); }
                         }
                     }
                 }while(type || flags);
                 s.align();
-                return {commands: cmds.join('')};
+                return {commands: cmds.join(''), paths: paths};
             },
             
             _handleDefineText: function(s, offset, length, frm, withAlpha){
@@ -880,9 +908,9 @@
         };
         
         function nlizeMatrix(matrix){
-            return {
-                scaleX: matrix.scaleX * 20, scaleY: matrix.scaleY * 20,
-                skewX: matrix.skewX * 20, skewY: matrix.skewY * 20,
+            return {	/* Ghostoy's Fix: no need to multiply by 20 */
+                scaleX: matrix.scaleX, scaleY: matrix.scaleY,
+                skewX: matrix.skewX, skewY: matrix.skewY,
                 moveX: matrix.moveX, moveY: matrix.moveY
             };
         }
