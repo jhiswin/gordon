@@ -222,8 +222,67 @@ Gordon.CanvasRenderer.prototype = {
 		        }
         	}
         	break;
+        case 'morph':
+        	// cache diffs
+        	var se = obj.startEdges,
+    			ee = obj.endEdges,
+    			ss = (se instanceof Array ? se : [se]),
+    			es = (ee instanceof Array ? ee : [ee]);
+        	
+        	for(var i = 0; i < ss.length; i++) {
+	    		var sr = ss[i].records,
+	    			er = es[i].records,
+	    			records = [],
+	        		fill = t._diffColor(ss[i].fill[0], ss[i].fill[1]),
+	        		line = {
+	        			width: (ss[i].line.width[1] - ss[i].line.width[0]) / 65535,
+	        			color: t._diffColor(ss[i].line.color[1], ss[i].line.color[0])
+	        		};
+	
+	        	for(var j = 0, length = sr.length; j < length; j++) {
+	        		var ercx = er[j].cx || (er[j].x1 + sr[j].x1) * 0.5,
+	        			ercy = er[j].cy || (er[j].y1 + sr[j].y1) * 0.5,
+	        			srcx = sr[j].cx || (er[j].x1 + sr[j].x1) * 0.5,
+	        			srcy = sr[j].cy || (er[j].y1 + sr[j].y1) * 0.5,
+	        			r = {
+	        			x1: (er[j].x1 - sr[j].x1) / 65535,
+	        			y1: (er[j].y1 - sr[j].y1) / 65535,
+	        			x2: (er[j].x2 - sr[j].x2) / 65535,
+	        			y2: (er[j].y2 - sr[j].y2) / 65535,
+	        			cx: (ercx - srcx) / 65535,
+	        			cy: (ercy - srcy) / 65535
+	        		};
+	        		records.push(r);
+	        	}
+	        	ss[i].diff = {
+	        		fill: fill,
+	        		line: line,
+	        		records: records
+	        	};
+        	}
+        	console.info(obj);
+        	break;
         }
         return t;
+    },
+    
+    _diffColor: function(c1, c2) {
+    	return {
+    		red: (c2.red - c1.red) / 65535,
+    		green: (c2.green - c1.green) / 65535,
+    		blue: (c2.blue - c1.blue) / 65535,
+    		alpha: (c2.alpha - c1.alpha) / 65535
+    	};
+    },
+    _patch: function(obj, diff, ratio) {
+    	if(!diff || !ratio) return obj;
+    	var dist = {};
+    	for(var i in obj) {
+    		if(obj.hasOwnProperty(i)) {
+    			dist[i] = obj[i] + diff[i] * ratio;
+    		}
+    	}
+    	return dist;
     },
 
     frame: function(frm) {
@@ -298,77 +357,79 @@ Gordon.CanvasRenderer.prototype = {
             def = t._dictionary[character.object];
         if (def) {
             if (def.type == 'shape') {
-                this._renderShape(c, def, character);
+                t._renderShape(c, def, character);
+            } else if (def.type == 'morph') {
+            	t._renderMorph(c, def, character);
             } else if (def.type == 'text') {
-                this._renderText(c, def, character);
+                t._renderText(c, def, character);
             } else if (def.type == 'sprite') {
-            	this._renderSprite(c, def, character);
+            	t._renderSprite(c, def, character);
             } else {
                 console.warn(def.type);
                 console.info(def);
             }
         }
-        return this;
+        return t;
     },
 
-    _renderShape: function(ctx, def, character) {
+    _renderShape: function(ctx, def, character, morph) {
         var t = this,
-            c = ctx,
-            o = character,
-            cxform = o.cxform,
-            segments = def.segments || [def],
-            clip = o.clipDepth;
+            cxform = character.cxform,
+            segments = morph ? (def.startEdges instanceof Array ? def.startEdges : [def.startEdges]) : (def.segments || [def]),
+            clip = character.clipDepth,
+            ratio = character.ratio;
 
-        t._prepare(c, o);
-        for(var j in segments) {
-            var seg = segments[j],
-                edges = seg.edges,
-                fill = seg.fill,
-                line = seg.line;
-            c.beginPath();
-            var firstEdge = edges[0],
+        t._prepare(ctx, character);
+        for(var i = 0, seg = segments[0]; seg; seg = segments[++i]) {
+            var diff = seg.diff || {records: []},
+            	records = seg.records,
+                fill = t._patch(seg.fill, diff.fill, ratio),
+                line = t._patch(seg.line, diff.line, ratio);
+            ctx.beginPath();
+            var firstEdge = t._patch(records[0], diff.records[0], ratio),
                 x1 = 0,
                 y1 = 0,
                 x2 = 0,
                 y2 = 0;
-            for(var i = 0, edge = firstEdge; edge; edge = edges[++i]){
+            for(var i = 0, edge = firstEdge; edge; edge = records[++i]){
+            	edge = t._patch(edge, diff.records[i], ratio);
                 x1 = edge.x1;
                 y1 = edge.y1;
-                if(x1 != x2 || y1 != y2 || !i){ c.moveTo(x1, y1); }
+                if(x1 != x2 || y1 != y2 || !i){ ctx.moveTo(x1, y1); }
                 x2 = edge.x2;
                 y2 = edge.y2;
                 if(null == edge.cx || null == edge.cy){
-                    c.lineTo(x2, y2);
+                    ctx.lineTo(x2, y2);
                 }else{
-                    c.quadraticCurveTo(edge.cx, edge.cy, x2, y2);
+                    ctx.quadraticCurveTo(edge.cx, edge.cy, x2, y2);
                 }
             }
     
             if(!line && (x2 != firstEdge.x1 || y2 != firstEdge.y1)){
-                c.lineTo(firstEdge.x1, firstEdge.y1);
+                ctx.lineTo(firstEdge.x1, firstEdge.y1);
             }
+            ctx.closePath();
 
             if(!clip) {
                 if (fill) {
-                    this._fillShape(c, fill, cxform);
+                    this._fillShape(ctx, fill, cxform);
                 }
         
                 if (line) {
-                    this._strokeShape(c, line, cxform);
+                    this._strokeShape(ctx, line, cxform);
                 }
             }
         }
-
-        t._postpare(c, o);
+       t._postpare(ctx, character);
 
         if(clip) {
-            c.save();
-            c.clip();
+            ctx.save();
+            ctx.clip();
             t._clipDepth = clip;
         }
 
-        if(t._clipDepth && t._clipDepth <= o.depth) {
-            c.restore();
+        if(t._clipDepth && t._clipDepth <= character.depth) {
+            ctx.restore();
             t._clipDepth = 0;
         }
     },
@@ -391,9 +452,9 @@ Gordon.CanvasRenderer.prototype = {
                 case 'radial':
                     var stops = g.stops;
                     if("linear" == type){
-                        var gradient = ctx.createLinearGradient(-16384, 0, 16384, 0);
+                        var gradient = ctx.createLinearGradient(-819.2, 0, 819.2, 0);
                     }else{
-                        var gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 16384);
+                        var gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 819.2);
                     }
                     for(var i in stops) {
                         var color = stops[i].color;
@@ -467,6 +528,10 @@ Gordon.CanvasRenderer.prototype = {
         ctx.lineWidth = max(stroke.width, 10);
         ctx.stroke();
         ctx.restore();
+    },
+    _renderMorph: function(ctx, def, character) {
+        console.info(character.ratio);
+        this._renderShape(ctx, def, character, true);
     },
     _renderText: function(ctx, def, character) {
         var t = this,

@@ -224,17 +224,17 @@
                 red: this.readUI8(),
                 green: this.readUI8(),
                 blue: this.readUI8()
-            }
+            };
         },
         
         readRGBA: function(){
             var rgba = this.readRGB();
-            rgba.alpha = this.readUI8() / 255;
+            rgba.alpha = this.readUI8();
             return rgba;
         },
         
         readARGB: function(){
-            var alpha = this.readUI8() / 255,
+            var alpha = this.readUI8(),
                 rgba = this.readRGB();
             rgba.alpha = alpha;
             return rgba;

@@ -51,6 +51,7 @@
                 frameRate: s.readUI16() / 256,
                 frameCount: s.readUI16()
             });
+            console.info('ver '+version);
             t._dictionary = {};
             t._jpegTables = null;
             do{
@@ -98,13 +99,13 @@
                         type: "shape",
                         id: id + '-' + (i + 1),
                         commands: edges2cmds(seg.records, !!seg.line),
-                        edges: seg.records,
+                        records: seg.records,
                         fill: seg.fill,
                         line: seg.line
                     }); }
                 }else{
                     shape.commands = edges2cmds(edges.records, !!edges.line),
-                    shape.edges = edges.records,
+                    shape.records = edges.records,
                     shape.fill = edges.fill,
                     shape.line = edges.line;
                 }
@@ -225,8 +226,8 @@
                             if(flags & c.NEW_STYLES){
                                 fsOffset = fillStyles.length;
                                 lsOffset = lineStyles.length;
-                                push.apply(fillStyles, t._readFillStyles(s, withAlpha || morph));
-                                push.apply(lineStyles, t._readLineStyles(s, withAlpha || morph));
+                                push.apply(fillStyles, t._readFillStyles(s, withAlpha, morph));
+                                push.apply(lineStyles, t._readLineStyles(s, withAlpha, morph));
                                 numFillBits = s.readUB(4);
                                 numLineBits = s.readUB(4);
                                 useSinglePath = false;
@@ -909,8 +910,8 @@
         
         function nlizeMatrix(matrix){
             return {	/* Ghostoy's Fix: no need to multiply by 20 */
-                scaleX: matrix.scaleX, scaleY: matrix.scaleY,
-                skewX: matrix.skewX, skewY: matrix.skewY,
+                scaleX: matrix.scaleX * 20, scaleY: matrix.scaleY * 20,
+                skewX: matrix.skewX * 20, skewY: matrix.skewY * 20,
                 moveX: matrix.moveX, moveY: matrix.moveY
             };
         }
