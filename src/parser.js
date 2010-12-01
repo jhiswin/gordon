@@ -909,7 +909,7 @@
         };
         
         function nlizeMatrix(matrix){
-            return {	/* Ghostoy's Fix: no need to multiply by 20 */
+            return {	/* Ghostoy's Fix: multiply by 20 to fix gradient bug in FF */
                 scaleX: matrix.scaleX * 20, scaleY: matrix.scaleY * 20,
                 skewX: matrix.skewX * 20, skewY: matrix.skewY * 20,
                 moveX: matrix.moveX, moveY: matrix.moveY
