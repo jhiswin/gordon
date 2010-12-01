@@ -391,9 +391,9 @@ Gordon.CanvasRenderer.prototype = {
                 case 'radial':
                     var stops = g.stops;
                     if("linear" == type){
-                        var gradient = ctx.createLinearGradient(-16384, 0, 16384, 0);
+                        var gradient = ctx.createLinearGradient(-819.2, 0, 819.2, 0);
                     }else{
-                        var gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 16384);
+                        var gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 819.2);
                     }
                     for(var i in stops) {
                         var color = stops[i].color;
