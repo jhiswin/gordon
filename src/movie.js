@@ -99,7 +99,7 @@
                 else{ timeout = 0; }
             }else{
                 if(!t.loop){ return t.stop(); }
-                else{ t.goTo(1); }
+                else{ t.rewind(); }
             }
             setTimeout(function(){
                 if(t.isPlaying){ t.play(); };
@@ -118,7 +118,7 @@
             var t = this,
                 c = t.currentFrame,
                 r = t._renderer;
-            if(gf.caller !== t.play){ t.stop(); }
+            if(gf.caller !== t.play && gf.caller !== t.rewind){ t.stop(); }
             if(isNaN(frmNumOrLabel)){
                 var frmNum = t._labeledFrameNums[frmNumOrLabel];
                 if(frmNum){ t.goTo(frmNum); }
@@ -151,6 +151,9 @@
         },
         
         rewind: function(){
+        	if(this._renderer.init) {
+        		this._renderer.init();
+        	}
             this.goTo(1);
             return this;
         },

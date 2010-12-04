@@ -49,19 +49,22 @@ Gordon.CanvasRenderer = function(width, height, frmSize, quality, scale, bgcolor
     t._stylesheet = doc.styleSheets[doc.styleSheets.length - 1];
 
     t._dictionary = {};
-    
     t._timeline = [];
-    t._displayList = {};
-    t._clipDepth = 0;
-    t._preserve = false;
-    
-    t._context = [];
-    
     t._cached = {};
     
+    t.init();
 };
 
 Gordon.CanvasRenderer.prototype = {
+		
+	init: function() {
+		var t = this;
+	    t._displayList = {};
+	    t._clipDepth = 0;
+	    t._preserve = false;
+	    
+	    t._context = [];
+	},
 
     setQuality: function(q) {
         // IGNORE
@@ -380,7 +383,7 @@ Gordon.CanvasRenderer.prototype = {
             ratio = character.ratio;
 
         t._prepare(ctx, character);
-        for(var i = 0, seg = segments[0]; seg; seg = segments[++i]) {
+        for(var j = 0, seg = segments[0]; seg; seg = segments[++j]) {
             var diff = seg.diff || {records: []},
             	records = seg.records,
                 fill = t._patch(seg.fill, diff.fill, ratio),
