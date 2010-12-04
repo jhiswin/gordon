@@ -26,6 +26,7 @@
         t.isPlaying = false;
         t.currentFrame = 0;
         t.currentLabel = undefined;
+        t.times = [];
         t._readyState = s.UNINITIALIZED;
         t._changeReadyState(t._readyState);
         var d = t._dictionary = {},
@@ -129,8 +130,10 @@
                     c = ++t.currentFrame;
                     var idx = c - 1,
                         frm = l[idx],
-                        action = frm.action;
+                        action = frm.action,
+                        start = new Date;
                     r.show(idx);
+                    t.times.push(new Date - start);
                     t.currentLabel = frm.lbl;
                     if(action){ action.call(this); }
                 }
