@@ -263,7 +263,6 @@ Gordon.CanvasRenderer.prototype = {
 	        		records: records
 	        	};
         	}
-        	console.info(obj);
         	break;
         }
         return t;

@@ -1,10 +1,12 @@
 src_dir = 'src'
 renderer_dir = File.join(src_dir, 'renderer')
+vendor_dir = File.join(src_dir, 'vendor')
 dist_dir = 'dist'
 build_dir = 'build'
 base_files = [ 'base', 'stream', 'parser', 'movie' ].map { |file| File.join(src_dir, file + '.js') }
 renderer_files = [ 'svg', 'canvas' ].map { |file| File.join(renderer_dir, file + '.js') }
-build_files = base_files + renderer_files
+vendor_files = [ 'js-inflate' ].map { |file| File.join(vendor_dir, file + '.js') }
+build_files = vendor_files + base_files + renderer_files
 intro = File.join(src_dir, 'intro.js')
 outro = File.join(src_dir, 'outro.js')
 output_file = File.join(dist_dir, 'gordon.js')
