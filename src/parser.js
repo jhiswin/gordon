@@ -1,5 +1,7 @@
 (function(){
-    if(false && doc && window.Worker){
+	var USE_WEB_WORKER = false;
+	
+    if(USE_WEB_WORKER && doc && window.Worker){
         var REGEXP_SCRIPT_SRC = /(^|.*\/)gordon.(min\.)?js$/,
             scripts = doc.getElementsByTagName("script"),
             src = '',
@@ -51,7 +53,6 @@
                 frameRate: s.readUI16() / 256,
                 frameCount: s.readUI16()
             });
-            console.info('ver '+version);
             t._dictionary = {};
             t._jpegTables = null;
             do{
@@ -67,6 +68,7 @@
                     if(0x3f == len){ len = s.readUI32(); }
                     var offset = s.offset;
                     if(code){
+//                    	console.info((Gordon.tagNames[code] || code.toString(16))+':'+len);
                         if(code == f){
                             t.ondata(frm);
                             break;
