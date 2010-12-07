@@ -724,7 +724,7 @@
     var JSInflate = {};
     GLOBAL.JSInflate = JSInflate;
 
-    JSInflate.inflate = function (data) {
+    JSInflate.inflate = function (data, raw) {
         var out, buff;
         var i, j;
 
@@ -736,7 +736,7 @@
         out = "";
         while((i = zip_inflate_internal(buff, 0, buff.length)) > 0) {
             for(j = 0; j < i; j++)
-                out += String.fromCharCode(buff[j]);
+                out += raw ? buff[j] : String.fromCharCode(buff[j]);
         }
         zip_inflate_data = null; // G.C.
 
