@@ -1,22 +1,33 @@
-<!DOCTYPE html> 
-<html> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
   <head> 
-    <title>Gordon: An open source Flash™ runtime written in pure JavaScript </title> 
+    <title>Gordon: An open source flash™ runtime written in pure JavaScript</title> 
     <script type="text/javascript" src="../dist/gordon.js"></script> 
   </head> 
-  <body> 
+  <body>
   	<script>
+  	function $(id) {
+  	  	return document.getElementById(id);
+  	}
   	onload = function() {
-  		var m = new Gordon.Movie('trip.swf', {id: 'stage', width: 1000, height: 700, renderer: Gordon.CanvasRenderer});
-  		setTimeout(function() {
-  	  		m.stop();
-  	  		setTimeout(function(){
-  	  	  		var fps = m.times.length * 1000 / m.times.reduce(function(a,b) { return a+b; });
-  	  	  		alert("Default FPS: "+m._frameRate.toPrecision(5)+"\nFPS: " + fps.toPrecision(5));
-  	  	  	}, 1000);
-  	  	}, 50000);
+  	  	var m, timer;
+  	  	$('start').addEventListener('click', function() {
+  	  	  	console.profile();
+  	  		m = new Gordon.Movie('trip.swf', {id: 'stage', width: 1000, height: 700, renderer: Gordon.CanvasRenderer});
+  	  		timer = setTimeout(function() {
+  	  	  		m.stop();
+  	  	  		console.profileEnd();
+  	  		}, 10000);
+  	  	}, false);
+
+  	  	$('show').addEventListener('click', function() {
+  	  	  	var fps = m.times.length * 1000 / m.times.reduce(function(a,b){return a+b;});
+  	  	  	$('output').innerHTML = 'Default FPS: '+m._frameRate.toPrecision(5)+', FPS: '+fps.toPrecision(5);
+  	  	}, false);
+
   	};
-  	</script> 
-	<div id="stage"></div>
+  	</script>
+	<button id="start">Start</button><button id="show">Show</button><span id="output"></span>
+    <div id="stage"></div> 
   </body> 
-</html> 
+</html>
