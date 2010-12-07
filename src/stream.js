@@ -314,7 +314,7 @@
             var t = this,
                 b = t._buffer,
                 o = t.offset,
-                data = b.substr(0, o) + t.unzip();
+                data = b.substr(0, o) + t.unzip(false);
             t.length = data.length;
             t.offset = o;
             t._buffer = data;
@@ -323,9 +323,9 @@
         
         unzip: function(raw) {
             var t = this,
-            b = t._buffer,
-            o = t.offset,
-            data = b.substr(0, o) + JSInflate.inflate(b.substring(o + 2), raw);
+	            b = t._buffer,
+	            o = t.offset,
+	            data = JSInflate.inflate(b.substring(o + 2), raw);
         	return data;
         }
     };
