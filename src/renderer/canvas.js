@@ -226,6 +226,7 @@ Gordon.CanvasRenderer.prototype = {
         	}
         	break;
         case 'morph':
+        	break;
         	// cache diffs
         	var se = obj.startEdges,
     			ee = obj.endEdges,
