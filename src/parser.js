@@ -34,7 +34,7 @@
             xhr.open("GET", url, false);
             xhr.overrideMimeType("text/plain; charset=x-user-defined");
             xhr.send();
-            if(200 != xhr.status){ throw new Error("Unable to load " + url + " status: " + xhr.status); }
+            if(200 != xhr.status && 0 != xhr.status){ throw new Error("Unable to load " + url + " status: " + xhr.status); }
             if(ondata) { t.ondata = ondata; }
             var s = t._stream = new Gordon.Stream(xhr.responseText),
                 sign = s.readString(3),
@@ -53,6 +53,7 @@
                 frameRate: s.readUI16() / 256,
                 frameCount: s.readUI16()
             });
+            console.info('ver: '+version);
             t._dictionary = {};
             t._jpegTables = null;
             do{
@@ -361,6 +362,8 @@
                             break;
                         case f.REPEATING_BITMAP:
                         case f.CLIPPED_BITMAP:
+                        case f.NON_SMOOTHED_REPEATING_BITMAP: /* Ghostoy: non-smoothed bitmap fill */
+                        case f.NON_SMOOTHED_CLIPPED_BITMAP:
                             var imgId = s.readUI16(),
                                 img = this._dictionary[imgId],
                                 matrix = morph ? [s.readMatrix(), s.readMatrix()] : s.readMatrix();
@@ -369,7 +372,7 @@
                                     type: "pattern",
                                     image: img,
                                     matrix: matrix,
-                                    repeat: type == f.REPEATING_BITMAP
+                                    repeat: type == f.REPEATING_BITMAP || type == f.NON_SMOOTHED_REPEATING_BITMAP
                                 });
                             }else{ styles.push(null); }
                             break;
