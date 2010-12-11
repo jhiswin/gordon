@@ -381,12 +381,12 @@ Gordon.CanvasRenderer.prototype = {
             clip = character.clipDepth,
             ratio = character.ratio;
 
+        t._prepare(ctx, character);
         for(var j = 0, seg = segments[0]; seg; seg = segments[++j]) {
             var diff = seg.diff || {records: []},
             	records = seg.records,
                 fill = t._patch(seg.fill, diff.fill, ratio),
                 line = t._patch(seg.line, diff.line, ratio);
-            t._prepare(ctx, character);
             ctx.beginPath();
             var firstEdge = t._patch(records[0], diff.records[0], ratio),
                 x1 = 0,
@@ -410,7 +410,6 @@ Gordon.CanvasRenderer.prototype = {
             if(!line && (x2 != firstEdge.x1 || y2 != firstEdge.y1)){
                 ctx.closePath();
             }
-            t._postpare(ctx, character);
 
             if(!clip) {
                 if (fill) {
@@ -422,6 +421,7 @@ Gordon.CanvasRenderer.prototype = {
                 }
             }
         }
+        t._postpare(ctx, character);
 
         if(clip) {
             ctx.save();
