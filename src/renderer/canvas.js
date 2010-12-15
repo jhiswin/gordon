@@ -137,7 +137,6 @@ Gordon.CanvasRenderer.prototype = {
         		colorData = obj.colorData,
 	        	width = obj.width,
         		height = obj.height;
-        	
         	if(colorData){
         		var fmt = obj.format;
         		if (fmt == Gordon.bitmapFormats.COLORMAPPED) {
@@ -498,6 +497,8 @@ Gordon.CanvasRenderer.prototype = {
                         ctx2.putImageData(data, 0, 0);
                         img = canvas;
                     }
+                    console.info(g.image.id);
+                    console.info(g.matrix);
                    
                     fill = ctx.createPattern(img, g.repeat ? 'repeat':'no-repeat');
                 	break;
