@@ -472,7 +472,6 @@ Gordon.CanvasRenderer.prototype = {
                 case 'pattern':
                 	var img = this._cached[objId({'id':g.image.id})];
                     if (cxform) {
-                    	/*
                         var id = objId({'id':g.image.id, 'cxform':cxform}),
                             canvas = this._cached[id];
                         if (!canvas) {
@@ -486,15 +485,6 @@ Gordon.CanvasRenderer.prototype = {
                             ctx2.putImageData(data, 0, 0);
                             this._cached[id] = canvas;
                         }
-                        */
-                        var canvas = doc.createElement('canvas');
-                        var ctx2 = canvas.getContext('2d');
-                        canvas.width = g.image.width;
-                        canvas.height = g.image.height;
-                        ctx2.drawImage(img, 0, 0);
-                        var data = ctx2.getImageData(0, 0, canvas.width, canvas.height);
-                        transformColorArray(data.data, cxform);
-                        ctx2.putImageData(data, 0, 0);
                         img = canvas;
                     }
                     console.info(g.image.id);
