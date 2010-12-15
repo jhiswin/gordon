@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+  <head> 
+    <title>Gordon: An open source flash™ runtime written in pure JavaScript</title> 
+    <script type="text/javascript" src="../dist/gordon.js"></script>
+  </head> 
+  <body>
+  	<script>
+  	function $(id) {
+  		return document.getElementById(id);
+  	}
+
+  	function bench(swf, time, render, cb) {
+  		var m = new Gordon.Movie(swf, {id: 'stage', width: 1000, height: 700, renderer: render});
+  		var timer = setTimeout(function() {
+  	  		m.stop();
+  	  		if(cb) {
+  	  			setTimeout(function() {cb(m.times);}, 500);
+  	  		}
+  		}, time);
+  		return m;
+  	}
+
+  	onload = function() {
+  	  	$('start').addEventListener('click', function() {
+  	  	  	bench($('swf').value, parseInt($('time').value), Gordon[$('renderer').value], function(times) {
+	  	  	  	var fps = times.length * 1000 / times.reduce(function(a,b){return a+b;});
+	  	  	  	$('result').innerHTML = 'FPS: '+fps.toPrecision(5);
+  	  	  	});
+  	  	}, false);
+  	};
+  	</script>
+  	<label>SWF</label>
+  	<select id="swf">
+  		<option value="blue.swf">blue.swf</option>
+  		<option value="car_smash.swf">car_smash.swf</option>
+  		<option value="gradient-tests.swf">gradient-tests.swf</option>
+  		<option value="test3.swf">test3.swf</option>
+  		<option value="tiger.swf">tiger.swf</option>
+  		<option value="trip.swf">trip.swf</option>
+  	</select>
+  	<label>Time</label>
+  	<input type="text" id="time" value="20000"/>
+  	<label>Renderer</label>
+  	<select id="renderer">
+  		<option value="CanvasRenderer">CanvasRenderer</option>
+  		<option value="SvgRenderer">SvgRenderer</option>
+  	</select>
+  	<input type="button" id="start" value="Start"/>
+  	<span id="result"></span>
+    <div id="stage"></div>
+  </body> 
+</html>

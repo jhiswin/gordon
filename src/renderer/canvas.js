@@ -149,7 +149,7 @@ Gordon.CanvasRenderer.prototype = {
 	                    pxIdx = 0,
 	                    canvas = doc.createElement("canvas"),
 	                    ctx = canvas.getContext("2d"),
-	                    imgData = ctx.getImageData(0, 0, width, height),
+	                    imgData = ctx.createImageData(width, height),
 	                    pxData = imgData.data,
 	                    pad = colorTableSize ? ((width + 3) & ~3) - width : 0;
 	                canvas.width = width;
@@ -178,7 +178,7 @@ Gordon.CanvasRenderer.prototype = {
         			var data = (new Gordon.Stream(colorData)).unzip(true),
         				canvas = doc.createElement('canvas'),
         				ctx = canvas.getContext('2d'),
-        				imgData = ctx.getImageData(0, 0, width, height),
+        				imgData = ctx.createImageData(width, height),
         				pxData = imgData.data,
         				pxIdx = idx = 0;
         			canvas.width = width;
@@ -201,22 +201,25 @@ Gordon.CanvasRenderer.prototype = {
 	            	uri = "data:image/jpeg;base64," + btoa(obj.data);
 		        if(alphaData){
 		            var img = new Image(),
-		                canvas = doc.createElement("canvas"),
-		                ctx = canvas.getContext("2d"),
-		                len = width * height,
-		                data = (new Gordon.Stream(alphaData)).unzip(true);
-		            img.src = uri;
+		                canvas = doc.createElement("canvas");
+
 		            canvas.width = width;
 		            canvas.height = height;
-		            ctx.drawImage(img, 0, 0);
-		            var imgData = ctx.getImageData(0, 0, width, height),
-		                pxData = imgData.data,
-		                pxIdx = 0;
-		            for(var i = 0; i < len; i++){
-		                pxData[pxIdx + 3] = data[i];
-		                pxIdx += 4;
-		            }
-		            ctx.putImageData(imgData, 0, 0);
+		            img.onload = function() {
+		            	var ctx = canvas.getContext("2d"),
+		            		len = width * height,
+		            		data = (new Gordon.Stream(alphaData)).unzip(true);
+		            	ctx.drawImage(img, 0, 0);
+			            var imgData = ctx.getImageData(0, 0, width, height),
+			                pxData = imgData.data,
+			                pxIdx = 0;
+			            for(var i = 0; i < len; i++){
+			                pxData[pxIdx + 3] = data[i];
+			                pxIdx += 4;
+			            }
+			            ctx.putImageData(imgData, 0, 0);
+		            };
+		            img.src = uri;
 		            t._cached[id] = canvas;
 		        } else {
 		        	var img = new Image();
@@ -409,9 +412,8 @@ Gordon.CanvasRenderer.prototype = {
             }
     
             if(!line && (x2 != firstEdge.x1 || y2 != firstEdge.y1)){
-                ctx.lineTo(firstEdge.x1, firstEdge.y1);
+                ctx.closePath();
             }
-            ctx.closePath();
 
             if(!clip) {
                 if (fill) {
@@ -423,7 +425,7 @@ Gordon.CanvasRenderer.prototype = {
                 }
             }
         }
-       t._postpare(ctx, character);
+        t._postpare(ctx, character);
 
         if(clip) {
             ctx.save();
@@ -471,6 +473,7 @@ Gordon.CanvasRenderer.prototype = {
                 case 'pattern':
                 	var img = this._cached[objId({'id':g.image.id})];
                     if (cxform) {
+                    	/*
                         var id = objId({'id':g.image.id, 'cxform':cxform}),
                             canvas = this._cached[id];
                         if (!canvas) {
@@ -480,22 +483,19 @@ Gordon.CanvasRenderer.prototype = {
                             canvas.height = g.image.height;
                             ctx2.drawImage(img, 0, 0);
                             var data = ctx2.getImageData(0, 0, canvas.width, canvas.height);
-                            var pixels = data.data;
-                            for(var i = 0; i < pixels.length; i+=4) {
-                                var color = transformColor({
-                                    red: pixels[i],
-                                    green: pixels[i+1],
-                                    blue: pixels[i+2],
-                                    alpha: pixels[i+3]
-                                }, cxform);
-                                pixels[i] = color.red;
-                                pixels[i+1] = color.green;
-                                pixels[i+2] = color.blue;
-                                pixels[i+3] = color.alpha;
-                            }
+                            transformColorArray(data.data, cxform);
                             ctx2.putImageData(data, 0, 0);
                             this._cached[id] = canvas;
                         }
+                        */
+                        var canvas = doc.createElement('canvas');
+                        var ctx2 = canvas.getContext('2d');
+                        canvas.width = g.image.width;
+                        canvas.height = g.image.height;
+                        ctx2.drawImage(img, 0, 0);
+                        var data = ctx2.getImageData(0, 0, canvas.width, canvas.height);
+                        transformColorArray(data.data, cxform);
+                        ctx2.putImageData(data, 0, 0);
                         img = canvas;
                     }
                    
@@ -528,7 +528,7 @@ Gordon.CanvasRenderer.prototype = {
             ctx.transform(m.scaleX, m.skewY, m.skewX, m.scaleY, m.moveX, m.moveY);
         }
         ctx.strokeStyle = t._buildFill(ctx, stroke.color, cxform);
-        ctx.lineWidth = max(stroke.width, 10);
+        ctx.lineWidth = min(stroke.width, 20);
         ctx.stroke();
         ctx.restore();
     },
@@ -675,7 +675,7 @@ function color2string(color){
     if (color.alpha == undefined) {
         return "rgb(" + [color.red, color.green, color.blue] + ')';
     } else {
-        return "rgba(" + [color.red, color.green, color.blue, color.alpha] + ')';
+        return "rgba(" + [color.red, color.green, color.blue, color.alpha / 255] + ')';
     }
 }
 
@@ -686,6 +686,19 @@ function transformColor(color, cxform){
         blue: ~~max(0, min((color.blue * cxform.multB) + cxform.addB, 255)),
         alpha: ~~max(0, min(((color.alpha == undefined ? 255: color.alpha) * cxform.multA) + cxform.addA, 255))
     };
+}
+
+function transformColorArray(colorArray, cxform){
+	var multR = cxform.multR, multG = cxform.multG, multB = cxform.multB, multA = cxform.multA,
+		addR = cxform.addR, addG = cxform.addG, addB = cxform.addB, addA = cxform.addA;
+	for(var i = 0, length = colorArray.length; i < length; i += 4) {
+		colorArray[i] = ~~max(0, min((colorArray[i] * multR) + addR, 255));
+		colorArray[i + 1] = ~~max(0, min((colorArray[i + 1] * multG) + addG, 255));
+		colorArray[i + 2] = ~~max(0, min((colorArray[i + 2] * multB) + addB, 255));
+		colorArray[i + 3] = ~~max(0, min((colorArray[i + 3] * multA) + addA, 255));
+	}
+
+	return colorArray;
 }
 
 function transformPoint(matrix, p) {
