@@ -6,8 +6,6 @@
  */
 
 (function(){
-// Feature switches
-var USE_WEB_FONT = false;
 
 Gordon.CanvasRenderer = function(width, height, frmSize, quality, scale, bgcolor) {
     var t = this,
@@ -88,50 +86,6 @@ Gordon.CanvasRenderer.prototype = {
 
         d[id] = obj;
         switch(type) {
-        case 'font':
-        	/* Glyph Fonts */
-            var glyphs = obj.glyphs;
-
-            if (USE_WEB_FONT) {	// Web Font
-                if(!obj.info) {
-                	var codes = [];
-                	for(var i = 0; i < glyphs.length; i++) codes[i] = i;
-                	obj.info = {
-                		codes: codes,
-                		advanceTable: null,
-                		kerningTable: null,
-                		ascent: 0,
-                		descent: 0
-                	};
-                }
-
-                var info = obj.info,
-	                codes = info.codes;
-	                kerningTable = info.kerningTable,
-	                advanceTable = info.advanceTable;
-
-            	var font_svg = '<?xml version="1.0" standalone="yes"?>'+
-	'<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >'+
-	'<svg xmlns="http://www.w3.org/2000/svg"><defs>'+
-	'<font horiz-adv-x="'+(advanceTable)+'" >'+
-	'<font-face units-per-em="1024" ascent="'+(info.ascent)+'" descent="'+(info.descent)+'" />';
-	            for(var i = 0, glyph = glyphs[0]; glyph; glyph = glyphs[++i]) {
-	                var cmds = glyph.commands,
-	                    code = codes[i];
-	                if(cmds && code) {
-	                    font_svg += '<glyph unicode="&#x'+code.toString(16)+';" d="'+cmds+'z"/>';
-	                }
-	            }
-	            if(kerningTable) {
-	                for(var i = 0, kern = kerningTable[0]; kern; kern = kerningTable[++i]) {
-	                    font_svg += '<hkern g1="'+kern.code1+'" g2="'+kern.code2+'" k="'+kern.adjustment+'"/>';
-	                }
-	            }
-	            font_svg += '</font>'+
-	'</defs></svg>';
-	            t._stylesheet.insertRule('@font-face {font-family: "f'+id+'"; src: url("data:font/svg;base64,'+btoa(font_svg)+'") format("svg")}', 0);
-            }
-            break;
         case 'image':
         	var id = objId({'id':obj.id}),
         		colorData = obj.colorData,
@@ -229,44 +183,6 @@ Gordon.CanvasRenderer.prototype = {
         	break;
         case 'morph':
         	break;
-        	// cache diffs
-        	var se = obj.startEdges,
-    			ee = obj.endEdges,
-    			ss = (se instanceof Array ? se : [se]),
-    			es = (ee instanceof Array ? ee : [ee]);
-        	
-        	for(var i = 0; i < ss.length; i++) {
-	    		var sr = ss[i].records,
-	    			er = es[i].records,
-	    			records = [],
-	        		fill = t._diffColor(ss[i].fill[0], ss[i].fill[1]),
-	        		line = {
-	        			width: (ss[i].line.width[1] - ss[i].line.width[0]) / 65535,
-	        			color: t._diffColor(ss[i].line.color[1], ss[i].line.color[0])
-	        		};
-	
-	        	for(var j = 0, length = sr.length; j < length; j++) {
-	        		var ercx = er[j].cx || (er[j].x1 + sr[j].x1) * 0.5,
-	        			ercy = er[j].cy || (er[j].y1 + sr[j].y1) * 0.5,
-	        			srcx = sr[j].cx || (er[j].x1 + sr[j].x1) * 0.5,
-	        			srcy = sr[j].cy || (er[j].y1 + sr[j].y1) * 0.5,
-	        			r = {
-	        			x1: (er[j].x1 - sr[j].x1) / 65535,
-	        			y1: (er[j].y1 - sr[j].y1) / 65535,
-	        			x2: (er[j].x2 - sr[j].x2) / 65535,
-	        			y2: (er[j].y2 - sr[j].y2) / 65535,
-	        			cx: (ercx - srcx) / 65535,
-	        			cy: (ercy - srcy) / 65535
-	        		};
-	        		records.push(r);
-	        	}
-	        	ss[i].diff = {
-	        		fill: fill,
-	        		line: line,
-	        		records: records
-	        	};
-        	}
-        	break;
         }
         return t;
     },
@@ -363,8 +279,6 @@ Gordon.CanvasRenderer.prototype = {
         if (def) {
             if (def.type == 'shape') {
                 t._renderShape(c, def, character);
-            } else if (def.type == 'morph') {
-            	t._renderMorph(c, def, character);
             } else if (def.type == 'text') {
                 t._renderText(c, def, character);
             } else if (def.type == 'sprite') {
@@ -487,8 +401,6 @@ Gordon.CanvasRenderer.prototype = {
                         }
                         img = canvas;
                     }
-                    console.info(g.image.id);
-                    console.info(g.matrix);
                    
                     fill = ctx.createPattern(img, g.repeat ? 'repeat':'no-repeat');
                 	break;
@@ -519,13 +431,9 @@ Gordon.CanvasRenderer.prototype = {
             ctx.transform(m.scaleX, m.skewY, m.skewX, m.scaleY, m.moveX, m.moveY);
         }
         ctx.strokeStyle = t._buildFill(ctx, stroke.color, cxform);
-        ctx.lineWidth = min(stroke.width, 20);
+        ctx.lineWidth = max(stroke.width, 20);
         ctx.stroke();
         ctx.restore();
-    },
-    _renderMorph: function(ctx, def, character) {
-        console.info(character.ratio);
-        this._renderShape(ctx, def, character, true);
     },
     _renderText: function(ctx, def, character) {
         var t = this,
@@ -536,41 +444,9 @@ Gordon.CanvasRenderer.prototype = {
 
         t._prepare(c, o);
         for(var i = 0, string = strings[0]; string; string = strings[++i]) {
-        	if(USE_WEB_FONT) {
-        		t._renderString(c, string);
-        	} else {
-        		t._renderStringStd(c, string);
-        	}
+      		t._renderStringStd(c, string);
         }
         t._postpare(c, o);
-    },
-    _renderString: function(ctx, string) {
-        var t = this,
-            c = ctx,
-            entries = string.entries,
-            fill = string.fill,
-            font = t._dictionary[string.font],
-            glyphs = font.glyphs,
-            info = font.info,
-            codes = info ? info.codes : null,
-            x = string.x, y = string.y;
-        t._prepare(c, string);
-        if (!info) {
-        	console.warn('no font info found');
-        	console.info(font);
-        }
-        for(var j = 0, entry = entries[0]; entry; entry = entries[++j]) {
-            var str = String.fromCharCode(codes ? codes[entry.index] : entry.index);
-            if(' ' != str || str.length) {
-                c.font = string.size + 'px f' + font.id;
-                if(fill) {
-                    c.fillStyle = t._buildFill(c, fill, null);
-                }
-                c.fillText(str, x, y);
-            }
-            x += entry.advance;
-        }
-        t._postpare(c, string);
     },
     _renderStringStd: function(ctx, string) {
     	var t = this,
