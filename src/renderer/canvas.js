@@ -187,14 +187,6 @@ Gordon.CanvasRenderer.prototype = {
         return t;
     },
     
-    _diffColor: function(c1, c2) {
-    	return {
-    		red: (c2.red - c1.red) / 65535,
-    		green: (c2.green - c1.green) / 65535,
-    		blue: (c2.blue - c1.blue) / 65535,
-    		alpha: (c2.alpha - c1.alpha) / 65535
-    	};
-    },
     _patch: function(obj, diff, ratio) {
     	if(!diff || !ratio) return obj;
     	var dist = {};
@@ -291,27 +283,24 @@ Gordon.CanvasRenderer.prototype = {
         return t;
     },
 
-    _renderShape: function(ctx, def, character, morph) {
+    _renderShape: function(ctx, def, character) {
         var t = this,
             cxform = character.cxform,
-            segments = morph ? (def.startEdges instanceof Array ? def.startEdges : [def.startEdges]) : (def.segments || [def]),
-            clip = character.clipDepth,
-            ratio = character.ratio;
+            segments = def.segments || [def],
+            clip = character.clipDepth;
 
         t._prepare(ctx, character);
         for(var j = 0, seg = segments[0]; seg; seg = segments[++j]) {
-            var diff = seg.diff || {records: []},
-            	records = seg.records,
-                fill = t._patch(seg.fill, diff.fill, ratio),
-                line = t._patch(seg.line, diff.line, ratio);
+            var records = seg.records,
+                fill = seg.fill,
+                line = seg.line;
             ctx.beginPath();
-            var firstEdge = t._patch(records[0], diff.records[0], ratio),
+            var firstEdge = records[0],
                 x1 = 0,
                 y1 = 0,
                 x2 = 0,
                 y2 = 0;
             for(var i = 0, edge = firstEdge; edge; edge = records[++i]){
-            	edge = t._patch(edge, diff.records[i], ratio);
                 x1 = edge.x1;
                 y1 = edge.y1;
                 if(x1 != x2 || y1 != y2 || !i){ ctx.moveTo(x1, y1); }
