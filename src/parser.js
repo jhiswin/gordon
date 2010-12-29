@@ -69,13 +69,23 @@
                     if(0x3f == len){ len = s.readUI32(); }
                     var offset = s.offset;
                     if(code){
-//                    	console.info((Gordon.tagNames[code] || code.toString(16))+':'+len);
+                    	var tagName = (Gordon.tagNames[code] || code.toString(16)),
+                    		id = '';
+                    	if(tagName.substring(0, 6) == 'DEFINE') {
+                    		id = s.readUI16();
+                    		s.seek(-2);
+                    	}
+                    	console.info(tagName+':'+id+':'+len);
+                    	
                         if(code == f){
                             t.ondata(frm);
                             break;
                         }
                         if(t[handl]){ t[handl](s, offset, len, frm); }
-                        else{ s.seek(len); }
+                        else{
+                        	console.warn('skipped');
+                        	s.seek(len);
+                        }
                     }
                 }while(code && code != f);
             }while(code);
@@ -738,12 +748,17 @@
                 return this;
             },
             
-            _handlePlaceObject2: function(s, offset, len, frm){
+            _handlePlaceObject2: function(s, offset, len, frm, v3){
                 var flags = s.readUI8(),
+                	flags2 = (v3 ? s.readUI8() : 0),
                     depth = s.readUI16(),
                     f = Gordon.placeFlags,
+                    f2 = Gordon.placeFlags2,
                     character = {depth: depth},
                     t = this;
+                if(v3 && ((flags2 & f2.HAS_CLASS_NAME) || (flags2 & f2.HAS_IMAGE) && (flags & f.HAS_CHARACTER))) {
+                	character.className = s.readString();
+                }
                 if(flags & f.HAS_CHARACTER){
                     var objId = s.readUI16();
                     character.object = t._dictionary[objId].id;
@@ -753,9 +768,148 @@
                 if(flags & f.HAS_RATIO){ character.ratio = s.readUI16(); }
                 if(flags & f.HAS_NAME){ character.name = s.readString(); }
                 if(flags & f.HAS_CLIP_DEPTH){ character.clipDepth = s.readUI16(); }
+                if(v3) {
+                	if(flags2 & f2.HAS_FILTER_LIST){ character.filterList = t._readFilterList(s); }
+                	if(flags2 & f2.HAS_BLEND_MODE){ character.blendMode = s.readUI8(); }
+                	if(flags2 & f2.HAS_CACHE_AS_BITMAP){ character.bitmapCache = s.readUI8(); }
+                }
+                
                 if(flags & f.HAS_CLIP_ACTIONS){ s.seek(len - (s.offset - offset)); }
                 frm.displayList[depth] = character;
                 return t;
+            },
+            
+            _readFilterList: function(s) {
+            	var num = s.readUI8(),
+            		filters = [],
+            		r = Gordon.filters,
+            		f = null,
+            		id = null;
+            	while(num--) {
+            		id = s.readUI8();
+            		f = this['_read'+r[id]](s);
+            		f.id = id;
+            		filters.push(f);
+            	}
+            	return filters;
+            },
+            
+            _readColorMatrixFilter: function(s) {
+            	var num = 20,
+            		matrix = [];
+            	while(num--) {
+            		matrix.push(s.readFloat());
+            	}
+            	return {matrix: matrix};
+            },
+            
+            _readConvolutionFilter: function(s) {
+            	var x = s.readUI8(),
+            		y = s.readUI8(),
+            		f = {
+            			x: x,
+            			y: y,
+            			divisor: s.readFloat(),
+            			bias: s.readFloat(),
+            			matrix: s.read(x * y),
+            			defaultColor: s.readRGBA()
+            		},
+            		flags = s.readUI8();
+            	f.clamp = !!(flags & 0x02);
+            	f.preserveAlpha = !!(flags & 0x01);
+            	return f;
+            },
+            
+            _readBlurFilter: function(s) {
+            	return {
+            		blurX: s.readFixed(),
+            		blurY: s.readFixed(),
+            		passes: s.readUB(5),
+            		reserved: s.readUB(3)
+            	};
+            },
+            
+            _readDropShadowFilter: function(s) {
+            	var f = {
+            			dropShadowColor: s.readRGBA(),
+            			blurX: s.readFixed(),
+            			blurY: s.readFixed(),
+            			angle: s.readFixed(),
+            			distance: s.readFixed(),
+            			strength: s.readFixed8()            			
+            		},
+            		flags = s.readUI8();
+            	f.innerShadow = !!(flags & 0x80);
+            	f.knockout = !!(flags & 0x40);
+            	f.compositeSource = !!(flags & 0x20);
+            	f.passes = flags & 0x1f;
+            	return f;
+            },
+            
+            _readGlowFilter: function(s) {
+            	var f = {
+            			glowColor: s.readRGBA(),
+            			blurX: s.readFixed(),
+            			blurY: s.readFixed(),
+            			strength: s.readFixed8()
+            		},
+            		flags = s.readUI8();
+            	f.innerGlow = !!(flags & 0x80);
+            	f.knockout = !!(flags & 0x40);
+            	f.compositeSource = !!(flags & 0x20);
+            	f.passes = flags & 0x1f;
+            	return f;
+            },
+            
+            _readBevelFilter: function(s) {
+            	var f = {
+            			shadowColor: s.readRGBA(),
+            			highlightColor: s.readRGBA(),
+            			blurX: s.readFixed(),
+            			blurY: s.readFixed(),
+            			angle: s.readFixed(),
+            			distance: s.readFixed(),
+            			strength: s.readFixed8()
+            		},
+            		flags = s.readUI8();
+            	f.innerShadow = !!(flags & 0x80);
+            	f.knockout = !!(flags & 0x40);
+            	f.compositeSource = !!(flags & 0x20);
+            	f.onTop = !!(flags & 0x10);
+            	f.passes = flags & 0x0f;
+            	return f;
+           },
+           
+           _readGradientGlowFilter: function(s) {
+        	   var num = s.readUI8(),
+        	   		colors = [],
+        	   		ratio = [],
+        	   		f = {};
+        	   for(var i = 0; i < num; i++) {
+        		   colors.push(s.readRGBA());
+        	   }
+        	   for(var i = 0; i < num; i++) {
+        		   ratio.push(s.readUI8());
+        	   }
+        	   f.blurX = s.readFixed();
+        	   f.blueY = s.readFixed();
+        	   f.angle = s.readFixed();
+        	   f.distance = s.readFixed();
+        	   f.strength = s.readFixed8();
+	           f.innerShadow = !!(flags & 0x80);
+	           f.knockout = !!(flags & 0x40);
+	           f.compositeSource = !!(flags & 0x20);
+	           f.onTop = !!(flags & 0x10);
+	           f.passes = flags & 0x0f;
+	           return f;
+           },
+           
+           _readGradientBevelFilter: function(s) {
+        	   return this._readGradientGlowFilter(s);
+           },
+            
+            _handlePlaceObject3: function(s, offset, len, frm) {
+            	return this._handlePlaceObject2(s, offset, len, frm, true);
             },
             
             _handleRemoveObject2: function(s, offset, len, frm){
@@ -810,6 +964,13 @@
                         if(0x3f == len){ len = s.readUI32(); }
                         var offset = s.offset;
                         if(code){
+                        	var tagName = (Gordon.tagNames[code] || code.toString(16)),
+	                    		iid = '';
+	                    	if(tagName.substring(0, 6) == 'DEFINE') {
+	                    		iid = s.readUI16();
+	                    		s.seek(-2);
+	                    	}
+	                    	console.info('>>'+tagName+':'+iid+':'+len);
                             if(code == f){
                                 timeline.push(frm);
                                 frm = {
@@ -854,14 +1015,15 @@
                 return t;
             },
             
-            _handleDefineFont2: function(s, offset, len){
+            _handleDefineFont2: function(s, offset, len, frm, extended){
                 var id = s.readUI16(),
                     hasLayout = s.readBool(),
                     glyphs = [],
                     font = {
                         type: "font",
                         id: id,
-                        glyphs: glyphs
+                        glyphs: glyphs,
+                        extended: !!extended
                     },
                     codes = [],
                     f = font.info = {
@@ -910,6 +1072,49 @@
                 this.ondata(font);
                 this._dictionary[id] = font;
                 return this;
+            },
+            _handleDefineFont3: function(s, offset, len, frm) {
+            	return this._handleDefineFont2(s, offset, len, frm, true);
+            },
+            _handleDefineEditText: function(s, offset, len) {
+            	var t = this,
+            		d = t._dictionary,
+            		id = s.readUI16(),
+            		bounds = s.readRect(),
+            		flags = s.readUI16(),
+            		txt = {
+            			type: 'edit-text',
+            			id: id,
+            			bounds: bounds,
+            			wordWrap: !!(flags & 0x4000),
+            			multiline: !!(flags && 0x2000),
+            			password: !!(flags && 0x1000),
+            			readOnly: !!(flags && 0x0800),
+            			autoSize: !!(flags && 0x0040),
+            			noSelect: !!(flags && 0x0010),
+            			border: !!(flags && 0x0008),
+            			wasStatic: !!(flags && 0x0004),
+            			html: !!(flags && 0x0002),
+            			useOutlines: !!(flags && 0x0001)
+            		};
+            	if(flags & 0x0100) txt.font = d[s.readUI16()].id;
+            	if(flags & 0x0080) txt.fontClass = s.readString();
+            	if(flags & 0x0100) txt.fontHeight = s.readUI16();
+            	if(flags & 0x0400) txt.color = s.readRGBA();
+            	if(flags & 0x0200) txt.maxLength = s.readUI16();
+            	if(flags & 0x0020) {
+            		txt.align = s.readUI8();
+            		txt.leftMargin = s.readUI16();
+            		txt.rightMargin = s.readUI16();
+            		txt.indent = s.readUI16();
+            		txt.leading = s.readSI16();
+            	}
+        		txt.variableName = s.readString();
+        		if(flags & 0x8000) txt.initialText = s.readString();
+        		
+            	t.ondata(txt);
+            	t._dictionary[id] = txt;
+            	return t;
             }
         };
         

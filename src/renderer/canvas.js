@@ -577,8 +577,8 @@ Gordon.CanvasRenderer.prototype = {
     		c = ctx,
     		entries = string.entries,
     		fill = string.fill,
-    		scale = string.size / 1024,
     		font = t._dictionary[string.font],
+    		scale = string.size / (font.extended ? 1024 * 20: 1024),
     		glyphs = font.glyphs,
     		info = font.info,
             x = string.x, y = string.y;

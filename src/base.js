@@ -280,6 +280,23 @@ Gordon = {
         HAS_CLIP_DEPTH: 0x40,
         HAS_CLIP_ACTIONS: 0x80
     },
+    placeFlags2: {
+    	HAS_IMAGE: 0x10,
+    	HAS_CLASS_NAME: 0x08,
+    	HAS_CACHE_AS_BITMAP: 0x04,
+    	HAS_BLEND_MODE: 0x02,
+    	HAS_FILTER_LIST: 0x01
+    },
+    filters: [
+        'DropShadowFilter',
+        'BlurFilter',
+        'GlowFilter',
+        'BevelFilter',
+        'GradientGlowFilter',
+        'ConvolutionFilter',
+        'ColorMatrixFilter',
+        'GradientBevelFilter'
+	],
     defaultRenderer: null
 };
 
