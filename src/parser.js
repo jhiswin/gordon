@@ -355,8 +355,8 @@
                                 style = {
                                     type: type == f.LINEAR_GRADIENT ? "linear" : "radial",
                                     matrix: matrix,
-                                    spread: morph ? Godon.spreadModes.PAD : s.readUB(2),
-                                    interpolation: morph ? Godon.interpolationModes.RGB : s.readUB(2),
+                                    spread: morph ? Gordon.spreadModes.PAD : s.readUB(2),
+                                    interpolation: morph ? Gordon.interpolationModes.RGB : s.readUB(2),
                                     stops: stops
                                 },
                                 numStops = s.readUB(4);
