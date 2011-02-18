@@ -25,11 +25,11 @@
 
   	function bench(swf, time, render, cb) {
         var res = getResolution();
-        console.profile(swf);
+        //console.profile(swf);
   		var m = new Gordon.Movie(swf, {id: 'stage', width: res.width, height: res.height, renderer: render});
   		var timer = setTimeout(function() {
   	  		m.stop();
-            console.profileEnd(swf);
+            //console.profileEnd(swf);
   	  		if(cb) {
   	  			setTimeout(function() {cb(m.times);}, 500);
   	  		}
@@ -40,8 +40,9 @@
   	onload = function() {
   	  	$('start').addEventListener('click', function() {
   	  	  	bench($('swf').value, parseInt($('time').value), Gordon[$('renderer').value], function(times) {
-	  	  	  	var fps = times.length * 1000 / times.reduce(function(a,b){return a+b;});
-	  	  	  	$('result').innerHTML = 'FPS: '+fps.toPrecision(5);
+	  	  	  	var fps = (times.length - 1) * 1000 / times.reduce(function(a,b){return a+b;}, 0),
+                    def = times[0];
+	  	  	  	$('result').innerHTML = 'FPS: '+fps.toPrecision(5) + ', DEF: ' + def + 'ms';
   	  	  	});
   	  	}, false);
   	};
@@ -69,7 +70,7 @@
     <input type="radio" id="res3" name="resolution" checked="checked"/><label for="res3">512x512</label>
     <input type="radio" id="res4" name="resolution"/><label for="res4">1024x1024</label>
   	<input type="button" id="start" value="Start"/>
-  	<span id="result"></span>
+  	<span id="result">FPS: 0, DEF: 0ms</span>
     <div id="stage"></div>
   </body> 
 </html>

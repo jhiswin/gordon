@@ -21,12 +21,11 @@
         t.url = url;
         for(var prop in defaults){ t[prop] = prop in options ? options[prop] : defaults[prop]; }
         if(!url){ throw new Error("URL of a SWF movie file must be passed as first argument"); }
-        t._startTime = +new Date;
         t.framesLoaded = 0;
         t.isPlaying = false;
         t.currentFrame = 0;
         t.currentLabel = undefined;
-        t.times = [];
+        t.times = [0];
         t._readyState = s.UNINITIALIZED;
         t._changeReadyState(t._readyState);
         var d = t._dictionary = {},
@@ -78,8 +77,10 @@
                     if(n == t.totalFrames){ t._changeReadyState(s.COMPLETE); }
                     break;
                 default:
+                    var startTime = new Date();
                     t._renderer.define(obj);
                     d[obj.id] = obj;
+                    t.times[0] += new Date() - startTime;
             }
         });
     };
@@ -189,10 +190,6 @@
             }else{ t.quality = thq._quality = q; }
             t._renderer.setQuality(q);
             return t;
-        },
-        
-        getTime: function(){
-            return this._startTime;
         }
     };
 })();

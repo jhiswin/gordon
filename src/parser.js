@@ -1,5 +1,5 @@
 (function(){
-	var USE_WEB_WORKER = false;
+	var USE_WEB_WORKER = true;
 	
     if(USE_WEB_WORKER && doc && window.Worker){
         var REGEXP_SCRIPT_SRC = /(^|.*\/)gordon.(min\.)?js$/,
@@ -53,9 +53,10 @@
                 frameRate: s.readUI16() / 256,
                 frameCount: s.readUI16()
             });
-            console.info('ver: '+version);
+//            console.info('ver: '+version);
             t._dictionary = {};
             t._jpegTables = null;
+            var startTime = Date.now();
             do{
                 var frm = {
                     type: "frame",
@@ -69,6 +70,7 @@
                     if(0x3f == len){ len = s.readUI32(); }
                     var offset = s.offset;
                     if(code){
+/*
                     	var tagName = (Gordon.tagNames[code] || code.toString(16)),
                     		id = '';
                     	if(tagName.substring(0, 6) == 'DEFINE') {
@@ -76,6 +78,7 @@
                     		s.seek(-2);
                     	}
                     	console.info(tagName+':'+id+':'+len);
+*/
                     	
                         if(code == f){
                             t.ondata(frm);
@@ -83,12 +86,14 @@
                         }
                         if(t[handl]){ t[handl](s, offset, len, frm); }
                         else{
-                        	console.warn('skipped');
+//                        	console.warn('skipped');
                         	s.seek(len);
                         }
                     }
                 }while(code && code != f);
             }while(code);
+            var endTime = Date.now();
+            t.ondata({'type': 'debug', 'msg': (endTime - startTime) / 1000, 'id': -1});
         };
         Gordon.Parser.prototype = {
             ondata: function(data){
@@ -964,6 +969,7 @@
                         if(0x3f == len){ len = s.readUI32(); }
                         var offset = s.offset;
                         if(code){
+/*
                         	var tagName = (Gordon.tagNames[code] || code.toString(16)),
 	                    		iid = '';
 	                    	if(tagName.substring(0, 6) == 'DEFINE') {
@@ -971,6 +977,7 @@
 	                    		s.seek(-2);
 	                    	}
 	                    	console.info('>>'+tagName+':'+iid+':'+len);
+*/
                             if(code == f){
                                 timeline.push(frm);
                                 frm = {

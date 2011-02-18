@@ -88,6 +88,9 @@ Gordon.CanvasRenderer.prototype = {
 
         d[id] = obj;
         switch(type) {
+        case 'debug':
+            console.info(obj.msg);
+            break;
         case 'font':
         	/* Glyph Fonts */
             var glyphs = obj.glyphs;
@@ -370,8 +373,10 @@ Gordon.CanvasRenderer.prototype = {
             } else if (def.type == 'sprite') {
             	t._renderSprite(c, def, character);
             } else {
+/*
                 console.warn(def.type);
                 console.info(def);
+*/
             }
         }
         return t;
@@ -487,8 +492,10 @@ Gordon.CanvasRenderer.prototype = {
                         }
                         img = canvas;
                     }
+/*
                     console.info(g.image.id);
                     console.info(g.matrix);
+*/
                    
                     fill = ctx.createPattern(img, g.repeat ? 'repeat':'no-repeat');
                 	break;
@@ -524,7 +531,7 @@ Gordon.CanvasRenderer.prototype = {
         ctx.restore();
     },
     _renderMorph: function(ctx, def, character) {
-        console.info(character.ratio);
+//        console.info(character.ratio);
         this._renderShape(ctx, def, character, true);
     },
     _renderText: function(ctx, def, character) {
