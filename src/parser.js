@@ -93,7 +93,7 @@
                 }while(code && code != f);
             }while(code);
             var endTime = Date.now();
-            t.ondata({'type': 'debug', 'msg': (endTime - startTime) / 1000, 'id': -1});
+            t.ondata({'type': 'debug', 'msg': (endTime - startTime), 'id': -1});
         };
         Gordon.Parser.prototype = {
             ondata: function(data){

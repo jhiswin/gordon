@@ -127,9 +127,6 @@
                 attrs = {id: type[0] + id};
             if(!item || !item.node){
                 switch(type){
-                    case 'debug':
-                        console.info(obj.msg);
-                        break;
                     case "shape":
                         var segments = obj.segments;
                         if(segments){

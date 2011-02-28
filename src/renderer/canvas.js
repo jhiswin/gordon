@@ -88,9 +88,6 @@ Gordon.CanvasRenderer.prototype = {
 
         d[id] = obj;
         switch(type) {
-        case 'debug':
-            console.info(obj.msg);
-            break;
         case 'font':
         	/* Glyph Fonts */
             var glyphs = obj.glyphs;

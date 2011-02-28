@@ -25,7 +25,7 @@
         t.isPlaying = false;
         t.currentFrame = 0;
         t.currentLabel = undefined;
-        t.times = [0];
+        t.times = [0, 0];
         t._readyState = s.UNINITIALIZED;
         t._changeReadyState(t._readyState);
         var d = t._dictionary = {},
@@ -76,11 +76,14 @@
                     }
                     if(n == t.totalFrames){ t._changeReadyState(s.COMPLETE); }
                     break;
+                case "debug":   // parsing time
+                    t.times[0] = obj.msg;
+                    break;
                 default:
                     var startTime = new Date();
                     t._renderer.define(obj);
                     d[obj.id] = obj;
-                    t.times[0] += new Date() - startTime;
+                    t.times[1] += new Date() - startTime;
             }
         });
     };

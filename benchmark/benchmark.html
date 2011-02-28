@@ -11,20 +11,11 @@
   	}
 
     function getResolution() {
-        var reses = document.querySelectorAll('input[name=resolution]');
-        for(var i in reses) {
-            var res = reses[i];
-            if(res.checked) {
-                var size = document.querySelector('label[for='+res.id+']').innerHTML.split('x');
-                return {width: parseInt(size[0]), height: parseInt(size[1])};
-            }
-        }
-
-        return {width: 512, height: 512};
+        var res = $('resolution').value.split('x');
+        return {width: res[0], height: res[1]};
     }
 
-  	function bench(swf, time, render, cb) {
-        var res = getResolution();
+  	function bench(swf, time, render, res, cb) {
         //console.profile(swf);
   		var m = new Gordon.Movie(swf, {id: 'stage', width: res.width, height: res.height, renderer: render});
   		var timer = setTimeout(function() {
@@ -39,38 +30,79 @@
 
   	onload = function() {
   	  	$('start').addEventListener('click', function() {
-  	  	  	bench($('swf').value, parseInt($('time').value), Gordon[$('renderer').value], function(times) {
-	  	  	  	var fps = (times.length - 1) * 1000 / times.reduce(function(a,b){return a+b;}, 0),
-                    def = times[0];
-	  	  	  	$('result').innerHTML = 'FPS: '+fps.toPrecision(5) + ', DEF: ' + def + 'ms';
+            var testcase = $('swf').value;
+  	  	  	bench(testcase, parseInt($('time').value), Gordon[$('renderer').value], getResolution(), function(times) {
+	  	  	  	var fps = (times.length - 2) * 1000 / times.reduce(function(a,b,i){if(i==0) return 0; else return a+b;}, 0),
+                    parse = times[0],
+                    def = times[1];
+	  	  	  	$('result').innerHTML = 'Test Case: '+testcase+'\nParse Time: '+parse+'ms\nFPS: '+fps.toPrecision(5) + '\nDEF: ' + def + 'ms';
   	  	  	});
   	  	}, false);
   	};
   	</script>
-  	<label>SWF</label>
-  	<select id="swf">
-  		<option value="blue.swf">blue.swf</option>
-  		<option value="test.swf">test.swf</option>
-  		<option value="car_smash.swf">car_smash.swf</option>
-  		<option value="gradient-tests.swf">gradient-tests.swf</option>
-  		<option value="test3.swf">test3.swf</option>
-  		<option value="tiger.swf">tiger.swf</option>
-  		<option value="trip.swf">trip.swf</option>
-  	</select>
-  	<label>Time</label>
-  	<input type="text" id="time" value="20000"/>
-  	<label>Renderer</label>
-  	<select id="renderer">
-  		<option value="CanvasRenderer">CanvasRenderer</option>
-  		<option value="SvgRenderer">SvgRenderer</option>
-  	</select>
-    <input type="radio" id="res0" name="resolution"/><label for="res0">64x64</label>
-    <input type="radio" id="res1" name="resolution"/><label for="res1">128x128</label>
-    <input type="radio" id="res2" name="resolution"/><label for="res2">256x256</label>
-    <input type="radio" id="res3" name="resolution" checked="checked"/><label for="res3">512x512</label>
-    <input type="radio" id="res4" name="resolution"/><label for="res4">1024x1024</label>
-  	<input type="button" id="start" value="Start"/>
-  	<span id="result">FPS: 0, DEF: 0ms</span>
-    <div id="stage"></div>
+
+    <table>
+        <tr>
+            <th>Test Case</th>
+            <td>
+                <select id="swf" size="5">
+                    <option value="test.swf" selected="selected">test.swf</option>
+                    <option value="blue.swf">blue.swf</option>
+                    <option value="tiger.swf">tiger.swf</option>
+                    <option value="trip.swf">trip.swf</option>
+                    <option value="car_smash.swf">car_smash.swf</option>
+                    <option value="gradient-tests.swf">gradient-tests.swf</option>
+                    <option value="test3.swf">test3.swf</option>
+                </select>
+            </td>
+            <td rowspan="7" style="border: 1px solid black;">
+                <div id="stage"></div>
+            </td>
+        </tr>
+        <tr>
+            <th>Renderer</th>
+            <td>
+                <select id="renderer" size="5">
+                    <option value="CanvasRenderer" selected="selected">CanvasRenderer</option>
+                    <option value="SvgRenderer">SvgRenderer</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Resolution</th>
+            <td>
+                <select id="resolution" size="5">
+                    <option value="64x64">64x64</option>
+                    <option value="128x128">128x128</option>
+                    <option value="256x256">256x256</option>
+                    <option value="512x512" selected="selected">512x512</option>
+                    <option value="1024x1024">1024x1024</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Time</th>
+            <td>
+                <input type="text" id="time" value="20000"/> ms
+            </td>
+        </tr>
+        <tr>
+            <th colspan="2">
+                <input type="button" id="start" value="Start"/>
+            </th>
+        </tr>
+        <tr>
+            <th>Result</th>
+            <td width="200">
+                <pre id="result">
+Test Case:
+Parse Time: 0ms
+FPS: 0
+DEF: 0ms
+                </pre>
+            </td>
+        </tr>
+    </table>
+
   </body> 
 </html>
